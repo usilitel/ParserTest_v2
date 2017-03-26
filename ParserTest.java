@@ -83,6 +83,9 @@ public class ParserTest {
         if (!isListEnd()){
             currentNode = new NodeTest();
             nodesList.add(currentNode);
+            if(currentNode.getNodeId()!=0) {
+                nodesList.get(currentNode.getNodeParentId()).addChildId(currentNode.getNodeId()); // в родительский узел добавляем информацию о потомке (т.е. о только что добавленном узле)
+            }
             //printNode();
         }
     }
@@ -106,7 +109,7 @@ public class ParserTest {
                 currentNode = nodesList.get(nodesList.get(currentNodeId-1).getNodeParentId());
             }
             else{
-                if (getChildrenCount(currentNode.getNodeId())==0){
+                if (currentNode.getChildrenCount()==0){
                     //System.out.println("2 currentNode.getNodeParentId() = " + currentNode.getNodeParentId());
                     currentNodeParentId = currentNode.getNodeParentId(); // если последний добавленный элемент - пустой список
                     currentNode = nodesList.get(currentNode.getNodeParentId());
@@ -132,7 +135,7 @@ public class ParserTest {
             for(NodeTest nodeTemp: nodesList){
                 if(nodeTemp.getNodeType()==1){ // список
                     // (для первого элемента ParentId не выводим)
-                    writer.append(repeatString("\t", nodeTemp.getNodeLevel()) + Integer.toString(nodeTemp.getNodeId()) + ", " + (((nodeTemp.getNodeId())==0)?"":(Integer.toString(nodeTemp.getNodeParentId()))) + ", " + nodeTemp.getNodeName() + ", " + "{" + getChildrenIds(nodeTemp.getNodeId()) + "}" + '\n'); // для списка выводим: id узла, id вышестоящего узла, имя узла, "{}"
+                    writer.append(repeatString("\t", nodeTemp.getNodeLevel()) + Integer.toString(nodeTemp.getNodeId()) + ", " + (((nodeTemp.getNodeId())==0)?"":(Integer.toString(nodeTemp.getNodeParentId()))) + ", " + nodeTemp.getNodeName() + ", " + "{" + nodeTemp.getChildrenIds() + "}" + '\n'); // для списка выводим: id узла, id вышестоящего узла, имя узла, "{}"
                 }
                 else{ // значение
                     writer.append(repeatString("\t", nodeTemp.getNodeLevel()) + Integer.toString(nodeTemp.getNodeId()) + ", " + Integer.toString(nodeTemp.getNodeParentId()) + ", " + nodeTemp.getNodeName() + ", " + nodeTemp.getNodeValue() + '\n'); // для значения выводим: id узла, id вышестоящего узла, имя узла, значение в узле
@@ -158,36 +161,8 @@ public class ParserTest {
         return stringOut;
     }
 
-    // получаем список id потомков через запятую
-    public String getChildrenIds(int parentId) {
 
-        String stringOut="";
 
-        for(NodeTest nodeTemp: nodesList){
-            if(nodeTemp.getNodeParentId()==parentId && nodeTemp.getNodeId()!=0){
-                stringOut+=nodeTemp.getNodeId() + ", ";
-            }
-        }
-
-        if(stringOut.length()>0){
-            stringOut=stringOut.substring(0, stringOut.length() - 2);
-        }
-
-        return stringOut;
-    }
-
-    // получаем количество потомков
-    public int getChildrenCount(int parentId) {
-        int сhildrenCount=0;
-
-        for(NodeTest nodeTemp: nodesList){
-            if(nodeTemp.getNodeParentId()==parentId){
-                сhildrenCount++;
-            }
-        }
-
-        return сhildrenCount;
-    }
 
 
 //----------------------------------
@@ -201,6 +176,10 @@ public class ParserTest {
         private int nodeType; // тип узла: 0 - значение, 1 - список
         private String nodeValue; // значение узла (для списка = "")
         private int nodeLevel; // уровень узла (уровень головного элемента = 0, уровень потомка = уровень родителя + 1)
+        private ArrayList<Integer> childrenIds; // список id дочерних узлов
+
+
+
 
 
         public int getNodeId() {
@@ -252,6 +231,11 @@ public class ParserTest {
         }
 
 
+        public void addChildId(int childId) {
+                this.childrenIds.add(childId);
+        }
+
+
 
 
 
@@ -261,6 +245,7 @@ public class ParserTest {
             this.setNodeType(getNodeTypeFromString());
             this.setNodeParentId(currentNodeParentId);
             if(currentNodeId>0){this.setNodeLevel(nodesList.get(this.getNodeParentId()).getNodeLevel()+1);}
+            this.childrenIds = new ArrayList<Integer>();
             //System.out.println("__" + this.getNodeType() + " " + this.getNodeName());
 
 
@@ -330,7 +315,6 @@ public class ParserTest {
 
 
 
-
         // проверяем строку по маске с использованием регулярных выражений (https://habrahabr.ru/post/267205/)
         public boolean isCorrectString(String stringPattern, String stringToCompare){
             Pattern pattern = Pattern.compile(stringPattern);
@@ -345,5 +329,18 @@ public class ParserTest {
         public boolean isCorrectNodeValue(String nodeValue){
             return (nodeValue.indexOf("\n")==-1)?true:false; // значение_узла – произвольная строка в двойных кавычках, не содержащая символов перевода строки и двойных кавычек
         }
+
+
+
+        // получаем список id потомков через запятую
+        public String getChildrenIds() {
+            return this.childrenIds.toString().replaceAll("[\\[\\]]","");
+        }
+
+        // получаем количество потомков
+        public int getChildrenCount() {
+            return this.childrenIds.size();
+        }
+
     }
 }
